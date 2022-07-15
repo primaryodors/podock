@@ -2,9 +2,12 @@
 PrimaryOdors.org molecular docker.<br>
 http://www.primaryodors.org
 
-PODock is a lightweight molecular docking software package that allows path-based docking, side-chain flexion, and binding strength
-measurement at the residue level and per binding type. It uses data files so atomic and interatomic parameters can be fully customized
-without having to recompile the code.
+PODock is a fast, lightweight molecular docking software package that offers the following advantages:
+- Path-based docking;
+- Native support for side-chain flexion;
+- Per-residue binding strength output;
+- Per-binding-type binding strength output;
+- Interatomic parameters stored in flat text files that can be edited without recompiling the application.
 
 To Use PODock, first clone the repository, then execute the following commands:
 
@@ -20,10 +23,8 @@ The application will require 3D maps of your target receptor(s) in PDB format. P
 hydrogenate PDB models that do not include hydrogen atoms, so if your model contains heavy atoms only, the accuracy of
 docking results may be severely compromised.
 
-PDBs for human olfactory receptors can be downloaded from here:<br>
-http://primaryodors.org/ors.php
-
-(Simply click on the receptor of interest, click on the Info tab, and then click Download PDB.)
+PDBs for human olfactory receptors are provided in the pdbs folder for olfactory docking. They have been modified from the PDBs
+avaialble at the GPCR-I-TASSER website: https://zhanggroup.org/GPCR-I-TASSER/
 
 It will also be necessary to obtain 3D models of your ligand(s). Currently, only SDF format is supported.
 SDFs can be obtained a few different ways:
