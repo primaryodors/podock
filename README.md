@@ -2,9 +2,12 @@
 PrimaryOdors.org molecular docker.<br>
 http://www.primaryodors.org
 
-PODock is a lightweight molecular docking software package that allows path-based docking, side-chain flexion, and binding strength
-measurement at the residue level and per binding type. It uses data files so atomic and interatomic parameters can be fully customized
-without having to recompile the code.
+PODock is a fast, lightweight molecular docking software package that offers the following advantages:
+- Path-based docking;
+- Native support for side-chain flexion;
+- Per-residue binding strength output;
+- Per-binding-type binding strength output;
+- Interatomic parameters stored in flat text files that can be edited without recompiling the application.
 
 To Use PODock, first clone the repository, then execute the following commands:
 
