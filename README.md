@@ -20,8 +20,8 @@ The application will require 3D maps of your target receptor(s) in PDB format. P
 hydrogenate PDB models that do not include hydrogen atoms, so if your model contains heavy atoms only, the accuracy of
 docking results may be severely compromised.
 
-PDBs for human olfactory receptors are provided for olfactory docking. They have been modified from the PDBs avaialble at the GPCR-I-TASSER
-website: https://zhanggroup.org/GPCR-I-TASSER/
+PDBs for human olfactory receptors are provided in the pdbs folder for olfactory docking. They have been modified from the PDBs
+avaialble at the GPCR-I-TASSER website: https://zhanggroup.org/GPCR-I-TASSER/
 
 It will also be necessary to obtain 3D models of your ligand(s). Currently, only SDF format is supported.
 SDFs can be obtained a few different ways:
