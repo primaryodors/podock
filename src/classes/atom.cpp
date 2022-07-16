@@ -1144,6 +1144,25 @@ bool Bond::rotate(float theta, bool allow_backbone)
     rot.v = v;
     rot.a = theta;
     btom->rotate_geometry(rot);
+    
+    // Whichever side has the lower sum of Atom::last_bind_energy values, rotate that side.
+    float mwb_total_binding=0, mwbi_total_binding=0;
+    Bond* inverse = btom->get_bond_between(atom);
+    
+    if (!atom->residue && inverse && inverse->moves_with_btom)
+    {
+    	for (i=0; moves_with_btom[i]; i++)
+    	{
+    		mwb_total_binding += moves_with_btom[i]->last_bind_energy;
+    	}
+    	for (i=0; inverse->moves_with_btom[i]; i++)
+    	{
+    		mwbi_total_binding += inverse->moves_with_btom[i]->last_bind_energy;
+    	}
+    	
+    	if (mwb_total_binding < mwbi_total_binding)
+    		return inverse->rotate(-theta, allow_backbone);				// DANGER! RECURSION.
+    }
 
     // cout << "Rotating " << atom->name << "-" << btom->name << "... ";
     for (i=0; moves_with_btom[i]; i++)

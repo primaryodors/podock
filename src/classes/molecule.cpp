@@ -1624,7 +1624,13 @@ Point Molecule::get_barycenter() const
     Point locs[atcount];
     int i;
 
-    for (i=0; i<atcount; i++) locs[i] = atoms[i]->get_location();
+    for (i=0; i<atcount; i++)
+    {
+    	locs[i] = atoms[i]->get_location();
+    	
+    	// Reduce motion of atoms engaged in intermolecular bonds by moving the center of rotation towards them.
+    	if (atoms[i]->last_bind_energy > 0) locs[i].weight += atoms[i]->last_bind_energy * 100;
+	}
 
     return average_of_points(locs, atcount);
 }
@@ -2221,6 +2227,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
     for (i=0; mm[i]; i++)
     {
         mm[i]->reset_conformer_momenta();
+        mm[i]->clear_atom_binding_energies();
     }
     inplen = i;
 
@@ -2277,7 +2284,19 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                 for (j=0; mm[j]; j++)
                 {
                     if (!nearby[j]) continue;
-                    bind1 += mm[i]->get_intermol_binding(mm[j]);
+                    float lbind = mm[i]->get_intermol_binding(mm[j]);
+                    
+                    #if 0
+                    if (lbind <= -1000)
+                    {
+                    	Point rel = mm[i]->get_barycenter().subtract(mm[j]->get_barycenter());
+                    	float delta = max(-lbind/100, (float)0.001);			// When you have to cast a constant to a float or the compiler thinks it to be a double and complains.
+                    	rel.scale(delta);
+                    	mm[i]->move(rel);
+                    }
+                    #endif 
+                    
+                    bind1 += lbind;
                 }
                 if (bind1 < bind)
                 {
@@ -2341,14 +2360,14 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                 Point lmpt(mm[i]->lmx, mm[i]->lmy, mm[i]->lmz);
                 if (lmpt.magnitude() > 1.5)
                 {
-                	float lmm = 0.5 / lmpt.magnitude();
+                	float lmm = 1.5 / lmpt.magnitude();
                 	mm[i]->lmx *= lmm;
                 	mm[i]->lmy *= lmm;
                 	mm[i]->lmz *= lmm;
                 }
                 else
                 {
-                	float lmm = 0.97;
+                	float lmm = 0.9;
                 	mm[i]->lmx *= lmm;
                 	mm[i]->lmy *= lmm;
                 	mm[i]->lmz *= lmm;

@@ -318,6 +318,7 @@ InteratomicForce** InteratomicForce::get_applicable(Atom* a, Atom* b)
     if (a->get_Z() == 1 && b->get_Z() == 8)
     {
     	Atom* HO = a->is_bonded_to("O");
+    	// if (!HO) HO = a->is_bonded_to("N");
     	if (HO)
     	{
     		Bond** bb = HO->get_bonds();
@@ -341,6 +342,7 @@ InteratomicForce** InteratomicForce::get_applicable(Atom* a, Atom* b)
     else if (b->get_Z() == 1 && a->get_Z() == 8)
     {
     	Atom* HO = b->is_bonded_to("O");
+    	// if (!HO) HO = a->is_bonded_to("N");
     	if (HO)
     	{
     		Bond** bb = HO->get_bonds();
@@ -588,12 +590,12 @@ float InteratomicForce::total_binding(Atom* a, Atom* b)
             if (a->is_polar() < 0 && b->is_polar() >= 0)
             {
                 dpa = dp;
-                dpb = 3;		// Assume same for all donors.
+                dpb = 4;		// Assume same for all donors.
             }
             else if (b->is_polar() < 0 && a->is_polar() >= 0)
             {
                 dpb = dp;
-                dpa = 3;
+                dpa = 4;
             }
             else dpa = dpb = dp;
         }

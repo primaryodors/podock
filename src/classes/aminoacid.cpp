@@ -7,6 +7,7 @@
 #include <ctime>
 #include <stdint.h>
 #include <cassert>
+#include <sstream>
 #include "molecule.h"
 #include "aminoacid.h"
 
@@ -1556,6 +1557,12 @@ std::ostream& operator<<(std::ostream& os, const AminoAcid& aa)
     return os;
 }
 
+std::string AminoAcid::printable()
+{
+	stringstream s;
+	s << *this;
+	return s.str();
+}
 
 bool AminoAcid::capable_of_inter(intera_type inter)
 {

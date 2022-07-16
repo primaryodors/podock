@@ -1233,28 +1233,33 @@ function loadFile(fileData, fileName = "")
                                ) subset.push(ln);
                             if (ln.substr(17,3) == "MTL") shiny.push(ln);
                         }
-                        var stringBlob1 = new Blob( [ subset.join("\n") ], { type: 'text/plain'} );
-                        stage.loadFile( stringBlob1, { ext: 'pdb' } ).then( function( comp1 )
+                        
+                        if (shiny.length)
                         {
-                            comp1.addRepresentation( "licorice",
-                            {
-                                opacity: opc_sidechain_active,
-								colorScheme: PODefScheme,
-                                metalness: mtl_licorice,
-                            });
-                            gmodel.push(comp1);
-                        });
-                        var stringBlob2 = new Blob( [ shiny.join("\n") ], { type: 'text/plain'} );
-                        stage.loadFile( stringBlob2, { ext: 'pdb' } ).then( function( comp2 )
-                        {
-                            comp2.addRepresentation( "spacefill",
-                            {
-                                opacity: opc_metal,
-								colorScheme: PODefScheme,
-                                metalness: mtl_metal,
-                            });
-                            gmodel.push(comp2);
-                        });
+		                    var stringBlob1 = new Blob( [ subset.join("\n") ], { type: 'text/plain'} );
+		                    stage.loadFile( stringBlob1, { ext: 'pdb' } ).then( function( comp1 )
+		                    {
+		                        comp1.addRepresentation( "licorice",
+		                        {
+		                            opacity: opc_sidechain_active,
+									colorScheme: PODefScheme,
+		                            metalness: mtl_licorice,
+		                        });
+		                        gmodel.push(comp1);
+		                    });
+		                    
+		                    var stringBlob2 = new Blob( [ shiny.join("\n") ], { type: 'text/plain'} );
+		                    stage.loadFile( stringBlob2, { ext: 'pdb' } ).then( function( comp2 )
+		                    {
+		                        comp2.addRepresentation( "spacefill",
+		                        {
+		                            opacity: opc_metal,
+									colorScheme: PODefScheme,
+		                            metalness: mtl_metal,
+		                        });
+		                        gmodel.push(comp2);
+		                    });
+                        }
 
                     	comp.autoView();
                         

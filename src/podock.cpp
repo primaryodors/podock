@@ -11,8 +11,9 @@
 
 using namespace std;
 
-#define _DBG_STEPBYSTEP true
+#define _DBG_STEPBYSTEP false
 #define _DORESPHRES false
+#define _DBGSPHRTMBL false
 
 struct DockResult
 {
@@ -163,6 +164,8 @@ int main(int argc, char** argv)
     std::vector<std::string> pathstrs;
     std::vector<std::string> states;
     std::vector<int> extra_wt;
+    
+    std::vector<int> exclusion;
 
     bool configset=false, protset=false, ligset=false, pktset=false;
     
@@ -219,6 +222,14 @@ int main(int argc, char** argv)
                 pocketcen.z = atof(fields[3]);
                 pktset = true;
                 */
+            }
+            else if (!strcmp(fields[0], "EXCL"))
+            {
+            	i=1;
+            	int excls = atoi(fields[i++]);
+            	int excle = atoi(fields[i++]);
+            	
+            	for (i=excls; i<=excle; i++) exclusion.push_back(i);
             }
             else if (!strcmp(fields[0], "PATH"))
             {
@@ -559,14 +570,29 @@ int main(int argc, char** argv)
 				
 				for (i=0; i<tsphsz; i++)
 				{
+					if (exclusion.size()
+						&&
+						std::find(exclusion.begin(), exclusion.end(), tsphres[i]->get_residue_no())!=exclusion.end()
+					   )
+					{
+						tsphres.erase(tsphres.begin()+i);
+						tsphsz--;
+						continue;
+					}
+												
 					// TODO: Algorithmically determine more accurate values based on interaction type, etc.
-					outer_sphere[i] = tsphres[i]->get_reach() + 2;
-					inner_sphere[i] = tsphres[i]->get_reach()/2 + 2;
+					float tsreach = tsphres[i]->get_reach();
+					outer_sphere[i] = tsreach + 4;
+					inner_sphere[i] = max(tsreach - 2, (float)2);
 				}
 				
 				const SCoord xaxis = Point(1,0,0), yaxis = Point(0,1,0), zaxis = Point(0,0,1);
 				float xrad, yrad, zrad, step, bestxr, bestyr, bestzr, score, worth, weight, bestscore;
 				const int ac = m.get_atom_count();
+				
+				#if _DBGSPHRTMBL
+				std::string tbldbgbest = "";
+				#endif
 				
 				step = fiftyseventh*30;
 				bestscore = 0;
@@ -575,7 +601,11 @@ int main(int argc, char** argv)
 					for (yrad=0; yrad <= M_PI*2; yrad += step)
 					{
 						for (zrad=0; zrad <= M_PI*2; zrad += step)
-						{    					
+						{    				
+							#if _DBGSPHRTMBL
+							std::string tbldbg = "";
+							#endif	
+							
 							score = 0;
 							for (i=0; i<ac; i++)
 							{
@@ -592,14 +622,17 @@ int main(int argc, char** argv)
 									else if (a->get_charge() || a->is_polar()) { it = hbond; worth = 40; }
 									else if (a->is_pi()) { it = pi; worth = 7; }
 									
-									if (tsphres[j]->capable_of_inter(it))
+									if (tsphres[j]->capable_of_inter(it)
+										&&
+										(it != vdW || !tsphres[j]->capable_of_inter(hbond))
+									   )
 									{
 										float r = a->get_location().get_3d_distance(tsphres[j]->get_atom_location("CA"));
 										if (r <= outer_sphere[j])
 										{	if (r > inner_sphere[j])
 											{
 												weight = 1;
-								
+												
 												if (extra_wt.size()
 													&&
 													std::find(extra_wt.begin(), extra_wt.end(), tsphres[j]->get_residue_no())!=extra_wt.end()
@@ -609,9 +642,26 @@ int main(int argc, char** argv)
 												}
 												
 												score += worth * weight;
+							
+												#if _DBGSPHRTMBL
+												char scoredisp[256];
+												sprintf(scoredisp, "%.2f x %.2f", worth, weight);
+												tbldbg += std::string("Atom ") + std::string(a->name) + std::string(" is in reach of ")
+													   + tsphres[j]->printable() + std::string(" for score ")
+													   + std::string(scoredisp)
+													   + std::string(".\n")
+													   ;
+												#endif
 											}
 											else
-											{	score -= 200;
+											{	score -= 5000;		// Inner sphere penalty.
+												#if _DBGSPHRTMBL
+												// cout << "*";
+												tbldbg += std::string("Atom ") + std::string(a->name) + std::string(" collides with ")
+													   + tsphres[j]->printable()
+													   + std::string(".\n")
+													   ;
+												#endif
 											}
 										}
 									}
@@ -624,6 +674,9 @@ int main(int argc, char** argv)
 								bestyr = yrad;
 								bestzr = zrad;
 								bestscore = score;
+								#if _DBGSPHRTMBL
+								tbldbgbest = tbldbg;
+								#endif
 							}
 							
 							m.rotate(zaxis, step);
@@ -638,6 +691,9 @@ int main(int argc, char** argv)
 					 << "y" << bestyr*fiftyseven << "deg, "
 					 << "z" << bestzr*fiftyseven << "deg."
 					 << endl;
+				#if _DBGSPHRTMBL
+				cout << endl << tbldbgbest;
+				#endif
 				
 				// Rotate the molecule into the best position.
 				m.rotate(xaxis, bestxr);
@@ -759,7 +815,20 @@ int main(int argc, char** argv)
 
 
             sphres = p.get_residues_can_clash_ligand(reaches_spheroid[nodeno], &m, nodecen, size, mcoord_resno);
-            for (i=sphres; i<SPHREACH_MAX; i++) reaches_spheroid[nodeno][i] = NULL;
+            for (i=sphres; i<SPHREACH_MAX; i++) reaches_spheroid[nodeno][i] = nullptr;
+            
+            for (i=0; i<sphres; i++)
+            {
+            	if (exclusion.size()
+					&&
+					std::find(exclusion.begin(), exclusion.end(), reaches_spheroid[nodeno][i]->get_residue_no())!=exclusion.end()
+				   )
+				{
+					for (j=i; j<sphres; j++) reaches_spheroid[nodeno][j] = reaches_spheroid[nodeno][j+1];
+					sphres--;
+					reaches_spheroid[nodeno][sphres] = nullptr;
+				}
+            }
 
             /*cout << "Dock residues for node " << nodeno << ": " << endl;
             if (output) *output << "Dock residues for node " << nodeno << ": " << endl;
