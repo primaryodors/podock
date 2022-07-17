@@ -502,7 +502,7 @@ std::vector<AminoAcid*> Protein::get_residues_near(Point pt, float maxr, bool fa
 {
 	std::vector<AminoAcid*> retval;
 	
-	float cb_tolerance_angle = 30 * fiftyseventh;
+	float cb_tolerance_angle = 44 * fiftyseventh;
 	float tolerance_sine = sin(cb_tolerance_angle);
 	
 	if (!residues) return retval;

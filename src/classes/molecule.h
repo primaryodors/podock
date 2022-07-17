@@ -75,6 +75,7 @@ class Molecule
     void delete_atom(Atom* a);
     void hydrogenate(bool steric_only = false);
     void clear_atom_binding_energies();
+    float get_sum_atom_binding_energies();
 
     // Bond functions.
     Bond** get_rotatable_bonds();

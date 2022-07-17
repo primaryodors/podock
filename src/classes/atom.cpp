@@ -1149,22 +1149,25 @@ bool Bond::rotate(float theta, bool allow_backbone)
     float mwb_total_binding=0, mwbi_total_binding=0;
     Bond* inverse = btom->get_bond_between(atom);
     
-    #if 0
+    // TODO: Make this section not a dismal failure for side chains (i.e. it should correctly refrain from executing).
     if (!atom->residue && !btom->residue && inverse && inverse->can_rotate && inverse->moves_with_btom)
     {
     	for (i=0; moves_with_btom[i]; i++)
     	{
+    		if (moves_with_btom[i]->is_backbone) goto _cannot_reverse_bondrot;
     		mwb_total_binding += moves_with_btom[i]->last_bind_energy;
     	}
     	for (i=0; inverse->moves_with_btom[i]; i++)
     	{
+    		if (moves_with_btom[i]->is_backbone) goto _cannot_reverse_bondrot;
     		mwbi_total_binding += inverse->moves_with_btom[i]->last_bind_energy;
     	}
     	
     	if (mwb_total_binding < mwbi_total_binding)
     		return inverse->rotate(-theta, allow_backbone);				// DANGER! RECURSION.
     }
-    #endif
+    _cannot_reverse_bondrot:
+    ;
 
     // cout << "Rotating " << atom->name << "-" << btom->name << "... ";
     for (i=0; moves_with_btom[i]; i++)

@@ -49,6 +49,7 @@ bool flex=true;
 float kJmol_cutoff = 0.01;
 bool kcal = false;
 float drift = 0.333;
+Point where_stuff_isnt;
 Molecule** gcfmols = NULL;
 
 bool use_bestbind_algorithm = false;		// Uses older "best binding" algorithm instead of newer "tumble spheres".
@@ -66,18 +67,30 @@ void iteration_callback(int iter)
     {
         //cout << "Wrangle! " << bary << ": " << bary.get_3d_distance(ligcen_target) << " vs. " << size.magnitude() << endl;
         bary = ligcen_target;
-        // ligand->reset_conformer_momenta();
+        ligand->reset_conformer_momenta();
     }
     else
     {
+    	drift = fabs(drift);
+    	if (drift > 0.5) drift = 0.5;
         bary.x += (ligcen_target.x - bary.x) * drift;
         bary.y += (ligcen_target.y - bary.y) * drift;
         bary.z += (ligcen_target.z - bary.z) * drift;
     }
 
     ligand->recenter(bary);
+    cout << "elohssa: " << bary << " " << ligand->get_sum_atom_binding_energies() << endl;
 
-    drift *= (1.0 - 0.5/iters);
+	if (ligand->get_sum_atom_binding_energies() > 0)
+    	drift *= (1.0 - 0.5/iters);
+    else
+    {
+    	Point delta = where_stuff_isnt.subtract(ligcen_target);
+    	ligcen_target.x += 0.2 * delta.x;
+    	ligcen_target.y += 0.2 * delta.y;
+    	ligcen_target.z += 0.2 * delta.z;
+    	drift = fmin(0.4, drift*1.1);
+	}
 
     if (gcfmols && seql)
     {
@@ -169,7 +182,7 @@ int main(int argc, char** argv)
 
     bool configset=false, protset=false, ligset=false, pktset=false;
     
-    int i;
+    int i, j, k, l, n;
     
     for (i=0; i<65536; i++) buffer[i] = 0;
     
@@ -385,6 +398,42 @@ int main(int argc, char** argv)
 		}
 	}
     pktset = true;
+    
+    where_stuff_isnt = pocketcen;
+    
+    // Find the emptiest part of the binding pocket.
+    float x, y, z, r, bestr=0;
+    for (x = -(size.x); x <= size.x; x += 0.1)
+    {
+    	for (y = -(size.y); y <= size.y; y += 0.1)
+    	{
+    		for (z = -(size.z); z <= size.z; z += 0.1)
+    		{
+    			Point candidate(x+pocketcen.x, y+pocketcen.y, z+pocketcen.z);
+    			std::vector<AminoAcid*> nearaa = p.get_residues_near(candidate, _DEFAULT_INTERA_R_CUTOFF, false);
+    			// cout << candidate << " has " << nearaa.size() << " residues nearby." << endl;
+    			if (n = nearaa.size())		// ANC.
+    			{
+    				float minr = Avogadro;
+    				for (i=0; i<n; i++)
+    				{
+    					r = nearaa[i]->get_nearest_atom(candidate)->get_location().get_3d_distance(candidate);
+    					if (r < minr)
+    					{
+    						minr = r;
+    					}
+					}
+					
+					if (minr > bestr)
+					{
+						where_stuff_isnt = candidate;
+						bestr = minr;
+					}
+    			}
+    		}
+    	}
+    }
+    cout << "The loneliest point is at " << where_stuff_isnt << ", located " << bestr << "A from the nearest residue." << endl;
 
     p.mcoord_resnos = mcoord_resno;
 
@@ -436,7 +485,6 @@ int main(int argc, char** argv)
 #endif
 
     // Identify the ligand atom with the greatest potential binding.
-    int j, k, l, n;
     Atom** ligbb = m.get_most_bindable(3);
     Atom** ligbbh = new Atom*[5];
     intera_type lig_inter_typ[5];
