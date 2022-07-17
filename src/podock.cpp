@@ -583,7 +583,7 @@ int main(int argc, char** argv)
 					// TODO: Algorithmically determine more accurate values based on interaction type, etc.
 					float tsreach = tsphres[i]->get_reach();
 					outer_sphere[i] = tsreach + 4;
-					inner_sphere[i] = max(tsreach - 2, (float)2);
+					inner_sphere[i] = max(tsreach - 2, (float)4);
 				}
 				
 				const SCoord xaxis = Point(1,0,0), yaxis = Point(0,1,0), zaxis = Point(0,0,1);
@@ -640,6 +640,7 @@ int main(int argc, char** argv)
 												{
 													weight = 1.25;		// Extra weight for residues mentioned in a CEN RES or PATH RES parameter.
 												}
+												else if (worth < 1) continue;
 												
 												score += worth * weight;
 							
@@ -654,7 +655,7 @@ int main(int argc, char** argv)
 												#endif
 											}
 											else
-											{	score -= 5000;		// Inner sphere penalty.
+											{	score -= 10000;		// Inner sphere penalty.
 												#if _DBGSPHRTMBL
 												// cout << "*";
 												tbldbg += std::string("Atom ") + std::string(a->name) + std::string(" collides with ")

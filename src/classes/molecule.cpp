@@ -2267,6 +2267,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
 
     int i, j, k, l, n, inplen, iter;
     float rad, bestfrrad, bestfrb;
+    float local_ESP = intermol_ESP;
 
     for (i=0; mm[i]; i++)
     {
@@ -2311,7 +2312,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                 if (nearby[j])
                 {
                     // get_intermol_binding includes clashes, so we don't have to check them here.
-                    bind += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                    bind += mm[i]->get_intermol_binding(mm[j]); // + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                 }
             }
             mm[i]->lastbind = bind;
@@ -2320,104 +2321,172 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
             float accel = 1.1;
 
             /**** Linear Motion ****/
-            if (mm[i]->movability >= MOV_ALL && iter >= 10)
+            if (mm[i]->movability >= MOV_ALL) // && iter >= 10)
             {
-                Point pt(mm[i]->lmx, 0, 0);
-                mm[i]->move(pt);
-                bind1 = 0;
-                for (j=0; mm[j]; j++)
+                if (!(iter % _fullrot_every))
                 {
-                    if (!nearby[j]) continue;
-                    float lbind = mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
-                    
-                    #if 0
-                    if (lbind <= -1000)
+		            rad = 0;
+		            bestfrb = 0;
+		            bestfrrad = nanf("No good results.");
+
+		            Point pt(1,0,0);
+		            
+		            float r, maxr=0;
+		            for (l=0; mm[i]->atoms[l]; l++)
+		            {
+		            	for (n=l+1; mm[i]->atoms[n]; n++)
+		            	{
+		            		r = mm[i]->atoms[l]->distance_to(mm[i]->atoms[n]);
+		            		if (r > maxr)
+		            		{
+		            			pt = mm[i]->atoms[l]->get_location().subtract(mm[i]->atoms[n]->get_location());
+		            			maxr = r;
+		            		}
+		            	}
+		            }
+		            
+		            SCoord v(pt);
+		            
+		            Point ptrand(frand(-1000,1000),frand(-1000,1000),frand(-1000,1000));
+		            SCoord normal = compute_normal(Point(), pt, ptrand);
+		            
+                	// cout << endl;
+                	Point bary = mm[i]->get_barycenter();
+                	r = fmin(fmax(4.0 - 0.01 * mm[i]->lastbind, 4.0), 0.1);
+                	normal.r = r;
+                    while ((M_PI*2-rad) > 1e-3)
                     {
-                    	Point rel = mm[i]->get_barycenter().subtract(mm[j]->get_barycenter());
-                    	float delta = max(-lbind/100, (float)0.001);			// When you have to cast a constant to a float or the compiler thinks it to be a double and complains.
-                    	rel.scale(delta);
-                    	mm[i]->move(rel);
+                    	Point mvto = rotate3D(bary.add(normal), bary, v, rad);
+                        mm[i]->recenter(mvto);
+                        rad += _fullrot_steprad;
+
+                        bind1 = 0;
+                        for (j=0; mm[j]; j++)
+                        {
+                            if (!nearby[j]) continue;
+                            bind1 += mm[i]->get_intermol_binding(mm[j]); // + local_ESP * mm[i]->get_intermol_potential(mm[j]);
+                        }
+                        
+                        // cout << "x " << rad*fiftyseven << "deg " << bind1 << endl;
+
+                        if (bind1 > bestfrb)
+                        {
+                            bestfrb = bind1;
+                            bestfrrad = rad;
+                        }
                     }
-                    #endif 
-                    
-                    bind1 += lbind;
-                }
-                if (bind1 < bind)
-                {
-                	// cout << bind << " vs " << bind1 << " x" << endl;
-                    pt.x = -pt.x;
-                    mm[i]->move(pt);
-                    mm[i]->lmx *= reversal;
-                }
-                else
-                {
-                	// cout << bind << " vs " << bind1 << " +" << endl;
-                    improvement += (bind1 - bind);
-                    if (fabs(mm[i]->lmx) < 0.5) mm[i]->lmx *= accel;
-                    bind = bind1;
-                }
 
-                pt.x = 0;
-                pt.y = mm[i]->lmy;
-                mm[i]->move(pt);
-                bind1 = 0;
-                for (j=0; mm[j]; j++)
-                {
-                    if (!nearby[j]) continue;
-                    bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
-                }
-                if (bind1 < bind)
-                {
-                    pt.y = -pt.y;
-                    mm[i]->move(pt);
-                    mm[i]->lmy *= reversal;
+                    if (!isnan(bestfrrad))
+                    {
+                    	Point mvto = rotate3D(bary.add(normal), bary, v, rad);
+                        mm[i]->recenter(mvto);
+                        v = mvto.subtract(bary);
+                        v.r /= 10;
+                        pt = v;
+                        mm[i]->lmx += pt.x;
+                        mm[i]->lmy += pt.y;
+                        mm[i]->lmz += pt.z;
+                    }
                 }
                 else
                 {
-                    improvement += (bind1 - bind);
-                    if (fabs(mm[i]->lmy) < 0.5) mm[i]->lmy *= accel;
-                    bind = bind1;
-                }
+		            Point pt(mm[i]->lmx, 0, 0);
+		            mm[i]->move(pt);
+		            bind1 = 0;
+		            for (j=0; mm[j]; j++)
+		            {
+		                if (!nearby[j]) continue;
+		                float lbind = mm[i]->get_intermol_binding(mm[j]); // + local_ESP * mm[i]->get_intermol_potential(mm[j]);
+		                
+		                #if 0
+		                if (lbind <= -1000)
+		                {
+		                	Point rel = mm[i]->get_barycenter().subtract(mm[j]->get_barycenter());
+		                	float delta = max(-lbind/100, (float)0.001);			// When you have to cast a constant to a float or the compiler thinks it to be a double and complains.
+		                	rel.scale(delta);
+		                	mm[i]->move(rel);
+		                }
+		                #endif 
+		                
+		                bind1 += lbind;
+		            }
+		            if (bind1 < bind)
+		            {
+		            	// cout << bind << " vs " << bind1 << " x" << endl;
+		                pt.x = -pt.x;
+		                mm[i]->move(pt);
+		                mm[i]->lmx *= reversal;
+		            }
+		            else
+		            {
+		            	// cout << bind << " vs " << bind1 << " +" << endl;
+		                improvement += (bind1 - bind);
+		                if (fabs(mm[i]->lmx) < 0.5) mm[i]->lmx *= accel;
+		                bind = bind1;
+		            }
 
-                pt.y = 0;
-                pt.z = mm[i]->lmz;
-                mm[i]->move(pt);
-                bind1 = 0;
-                for (j=0; mm[j]; j++)
-                {
-                    if (!nearby[j]) continue;
-                    bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
-                }
-                if (bind1 < bind)
-                {
-                    pt.z = -pt.z;
-                    mm[i]->move(pt);
-                    mm[i]->lmz *= reversal;
-                }
-                else
-                {
-                    improvement += (bind1 - bind);
-                    if (fabs(mm[i]->lmz) < 0.5) mm[i]->lmz *= accel;
-                    bind = bind1;
-                }
-                
-                Point lmpt(mm[i]->lmx, mm[i]->lmy, mm[i]->lmz);
-                if (lmpt.magnitude() > 1.5)
-                {
-                	float lmm = 1.5 / lmpt.magnitude();
-                	mm[i]->lmx *= lmm;
-                	mm[i]->lmy *= lmm;
-                	mm[i]->lmz *= lmm;
-                }
-                else
-                {
-                	float lmm = 0.9;
-                	mm[i]->lmx *= lmm;
-                	mm[i]->lmy *= lmm;
-                	mm[i]->lmz *= lmm;
-                }
+		            pt.x = 0;
+		            pt.y = mm[i]->lmy;
+		            mm[i]->move(pt);
+		            bind1 = 0;
+		            for (j=0; mm[j]; j++)
+		            {
+		                if (!nearby[j]) continue;
+		                bind1 += mm[i]->get_intermol_binding(mm[j]); // + local_ESP * mm[i]->get_intermol_potential(mm[j]);
+		            }
+		            if (bind1 < bind)
+		            {
+		                pt.y = -pt.y;
+		                mm[i]->move(pt);
+		                mm[i]->lmy *= reversal;
+		            }
+		            else
+		            {
+		                improvement += (bind1 - bind);
+		                if (fabs(mm[i]->lmy) < 0.5) mm[i]->lmy *= accel;
+		                bind = bind1;
+		            }
 
-                mm[i]->lastbind = bind;
+		            pt.y = 0;
+		            pt.z = mm[i]->lmz;
+		            mm[i]->move(pt);
+		            bind1 = 0;
+		            for (j=0; mm[j]; j++)
+		            {
+		                if (!nearby[j]) continue;
+		                bind1 += mm[i]->get_intermol_binding(mm[j]); // + local_ESP * mm[i]->get_intermol_potential(mm[j]);
+		            }
+		            if (bind1 < bind)
+		            {
+		                pt.z = -pt.z;
+		                mm[i]->move(pt);
+		                mm[i]->lmz *= reversal;
+		            }
+		            else
+		            {
+		                improvement += (bind1 - bind);
+		                if (fabs(mm[i]->lmz) < 0.5) mm[i]->lmz *= accel;
+		                bind = bind1;
+		            }
+		            
+		            Point lmpt(mm[i]->lmx, mm[i]->lmy, mm[i]->lmz);
+		            if (lmpt.magnitude() > 1.5)
+		            {
+		            	float lmm = 1.5 / lmpt.magnitude();
+		            	mm[i]->lmx *= lmm;
+		            	mm[i]->lmy *= lmm;
+		            	mm[i]->lmz *= lmm;
+		            }
+		            else
+		            {
+		            	float lmm = 0.9;
+		            	mm[i]->lmx *= lmm;
+		            	mm[i]->lmy *= lmm;
+		            	mm[i]->lmz *= lmm;
+		            }
+
+		            mm[i]->lastbind = bind;
+                }
             }
             /**** End Linear Motion ****/
 
@@ -2443,7 +2512,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                         for (j=0; mm[j]; j++)
                         {
                             if (!nearby[j]) continue;
-                            bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                            bind1 += mm[i]->get_intermol_binding(mm[j]) + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                         }
                         
                         // cout << "x " << rad*fiftyseven << "deg " << bind1 << endl;
@@ -2465,7 +2534,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                     for (j=0; mm[j]; j++)
                     {
                         if (!nearby[j]) continue;
-                        bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                        bind1 += mm[i]->get_intermol_binding(mm[j]) + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                     }
                     if (bind1 < bind)
                     {
@@ -2499,7 +2568,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                         for (j=0; mm[j]; j++)
                         {
                             if (!nearby[j]) continue;
-                            bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                            bind1 += mm[i]->get_intermol_binding(mm[j]) + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                         }
                         
                         // cout << "y " << rad*fiftyseven << "deg " << bind1 << endl;
@@ -2521,7 +2590,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                     for (j=0; mm[j]; j++)
                     {
                         if (!nearby[j]) continue;
-                        bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                        bind1 += mm[i]->get_intermol_binding(mm[j]) + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                     }
                     if (bind1 < bind)
                     {
@@ -2556,7 +2625,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                         for (j=0; mm[j]; j++)
                         {
                             if (!nearby[j]) continue;
-                            bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                            bind1 += mm[i]->get_intermol_binding(mm[j]) + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                         }
                         
                         // cout << "z " << rad*fiftyseven << "deg " << bind1 << endl;
@@ -2578,7 +2647,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                     for (j=0; mm[j]; j++)
                     {
                         if (!nearby[j]) continue;
-                        bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                        bind1 += mm[i]->get_intermol_binding(mm[j]) + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                     }
                     if (bind1 < bind)
                     {
@@ -2622,7 +2691,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                     {
                         if (!nearby[j]) continue;
                         // cout << ".";
-                        bind += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                        bind += mm[i]->get_intermol_binding(mm[j]) + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                     }
                 }
                 mm[i]->lastbind = bind;
@@ -2685,7 +2754,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                                 for (j=0; mm[j]; j++)
                                 {
                                     if (!nearby[j]) continue;
-                                    float lbind1 = /*mm[i]->get_intermol_binding(mm[j]) + intermol_ESP **/ mm[i]->get_intermol_potential(mm[j]);
+                                    float lbind1 = /*mm[i]->get_intermol_binding(mm[j]) + local_ESP **/ mm[i]->get_intermol_potential(mm[j]);
                                     bind1 += lbind1;
                                     #if DBG_BONDFLEX
                                     if (DBG_FLEXROTB == k && DBG_FLEXRES == residue)
@@ -2716,7 +2785,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                             for (j=0; mm[j]; j++)
                             {
                                 if (!nearby[j]) continue;
-                                bind1 += mm[i]->get_intermol_binding(mm[j]) + intermol_ESP * mm[i]->get_intermol_potential(mm[j]);
+                                bind1 += mm[i]->get_intermol_binding(mm[j]) + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                             }
                             if (bind1 < bind)
                             {

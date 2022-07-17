@@ -16,7 +16,7 @@
 #define BOND_DEF_NOT_FOUND 0xbadb09d
 
 // Give the atoms a sort of lookahead to know what kind of potential binding they could have if only they would rotate properly.
-#define intermol_ESP 0.001
+#define intermol_ESP 0.1
 
 #if defined(__linux__) || defined(__sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
 	#define CMD_CHECK_INSTALLED_3P_SMILES_PARSER "which obabel"
