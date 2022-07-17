@@ -2330,11 +2330,13 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
 
             float reversal = -0.666; // TODO: Make this binding-energy dependent.
             float accel = 1.1;
+            
+            continue; // Something in this fuction is funking up and requires to be identified and fixed.
 
             /**** Linear Motion ****/
             if (mm[i]->movability >= MOV_ALL) // && iter >= 10)
             {
-                if (0) //!(iter % _fullrot_every))
+                if (!(iter % _fullrot_every))
                 {
 		            rad = 0;
 		            bestfrb = 0;
@@ -2770,7 +2772,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                                     if (!nearby[j]) continue;
                                     float lbind1 = (mm[i]->mol_typ == MOLTYP_AMINOACID)
                                     			 ?  mm[i]->get_intermol_binding(mm[j])
-                                    			 :  mm[i]->get_intermol_potential(mm[j])
+                                    			 :  mm[i]->get_intermol_potential(mm[j]) - 200 * mm[i]->get_internal_clashes()
                                     			 ;
                                     bind1 += lbind1;
                                     #if DBG_BONDFLEX

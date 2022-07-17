@@ -78,8 +78,8 @@ void iteration_callback(int iter)
         bary.z += (ligcen_target.z - bary.z) * drift;
     }
 
-    ligand->recenter(bary);
-    cout << "elohssa: " << bary << " " << ligand->get_sum_atom_binding_energies() << endl;
+    // ligand->recenter(bary);
+    cout << "At no point should this number be significantly worse than the previous: " << bary << " " << ligand->get_sum_atom_binding_energies() << endl;
 
 	if (ligand->get_sum_atom_binding_energies() > 0)
     	drift *= (1.0 - 0.5/iters);
