@@ -1613,7 +1613,10 @@ void Molecule::move(Point move_amt)
     }
 }
 
-Point Molecule::get_barycenter() const
+// Don't make these ftns const. I just had to power cycle my computer 2x because the value in atcount
+// had more digits than my phone number and it kept crashing the IDE from the local variables panel.
+// Not even exaggerating.
+Point Molecule::get_barycenter()
 {
     if (noAtoms(atoms))
     {
@@ -1621,10 +1624,15 @@ Point Molecule::get_barycenter() const
         return pt;
     }
 
+    if (!atcount || atcount > 100)
+    {
+        for (atcount = 0; atoms[atcount]; atcount++);
+    }
+
     Point locs[atcount];
     int i;
 
-    for (i=0; i<atcount; i++)
+    for (i=0; atoms[i]; i++)
     {
         locs[i] = atoms[i]->get_location();
         locs[i].weight = atoms[i]->get_atomic_weight();
@@ -1633,7 +1641,7 @@ Point Molecule::get_barycenter() const
     return average_of_points(locs, atcount);
 }
 
-Point Molecule::get_rotation_center() const
+Point Molecule::get_rotation_center()
 {
     if (noAtoms(atoms))
     {
@@ -1641,10 +1649,15 @@ Point Molecule::get_rotation_center() const
         return pt;
     }
 
+    if (!atcount || atcount > 100)
+    {
+        for (atcount = 0; atoms[atcount]; atcount++);
+    }
+
     Point locs[atcount];
     int i;
 
-    for (i=0; i<atcount; i++)
+    for (i=0; atoms[i]; i++)
     {
     	locs[i] = atoms[i]->get_location();
     	

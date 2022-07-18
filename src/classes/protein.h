@@ -60,7 +60,7 @@ class Protein
     AminoAcid** get_residues_can_clash(int resno);
     int get_residues_can_clash_ligand
     (	AminoAcid** reaches_spheroid,
-        const Molecule* ligand,
+        Molecule* ligand,
         const Point nodecen,
         const Point size,
         const int* mcoord_resno

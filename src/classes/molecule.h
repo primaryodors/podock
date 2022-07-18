@@ -55,8 +55,8 @@ class Molecule
     float get_charge();
 
     // Spatial functions.
-    Point get_barycenter() const;
-    Point get_rotation_center() const;
+    Point get_barycenter();
+    Point get_rotation_center();
     virtual void move(SCoord move_amt);
     virtual void move(Point move_amt);
     virtual void recenter(Point new_location);
