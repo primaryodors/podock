@@ -2428,18 +2428,20 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
 		                if (!nearby[j]) continue;
 		                float lbind = mm[i]->get_intermol_binding(mm[j]); // + local_ESP * mm[i]->get_intermol_potential(mm[j]);
 		                
-		                #if 0
+		                #if 1
 		                if (lbind <= -1000)
 		                {
 		                	Point rel = mm[i]->get_barycenter().subtract(mm[j]->get_barycenter());
-		                	float delta = max(-lbind/100, (float)0.001);			// When you have to cast a constant to a float or the compiler thinks it to be a double and complains.
+		                	float delta = fmin(-lbind/10000, (float)0.5);			// When you have to cast a constant to a float or the compiler thinks it to be a double and complains.
 		                	rel.scale(delta);
 		                	mm[i]->move(rel);
+                            lbind = mm[i]->get_intermol_binding(mm[j]);
 		                }
 		                #endif 
 		                
 		                bind1 += lbind;
 		            }
+                    
 		            if (bind1 < bind)
 		            {
 		            	// cout << mm[i]->name << " " << bind << " vs " << bind1 << " x" << endl;

@@ -86,14 +86,14 @@ void iteration_callback(int iter)
 
 	if (ligand->get_sum_atom_binding_energies() > 0)
     	drift *= (1.0 - 0.5/iters);
-    else
+    /*else
     {
     	Point delta = where_stuff_isnt.subtract(ligcen_target);
     	ligcen_target.x += 0.2 * delta.x;
     	ligcen_target.y += 0.2 * delta.y;
     	ligcen_target.z += 0.2 * delta.z;
     	drift = fmin(0.4, drift*1.1);
-	}
+	}*/
 
     if (gcfmols && seql)
     {
@@ -406,11 +406,11 @@ int main(int argc, char** argv)
     
     // Find the emptiest part of the binding pocket.
     float x, y, z, r, bestr=0;
-    for (x = -(size.x); x <= size.x; x += 0.1)
+    for (x = -(size.x); x <= size.x; x += 0.25)
     {
-    	for (y = -(size.y); y <= size.y; y += 0.1)
+    	for (y = -(size.y); y <= size.y; y += 0.25)
     	{
-    		for (z = -(size.z); z <= size.z; z += 0.1)
+    		for (z = -(size.z); z <= size.z; z += 0.25)
     		{
     			Point candidate(x+pocketcen.x, y+pocketcen.y, z+pocketcen.z);
     			std::vector<AminoAcid*> nearaa = p.get_residues_near(candidate, _DEFAULT_INTERA_R_CUTOFF, false);
@@ -646,7 +646,7 @@ int main(int argc, char** argv)
 				#endif
 				
 				step = fiftyseventh*30;
-				bestscore = 0;
+				bestscore = -Avogadro;
 				for (xrad=0; xrad <= M_PI*2; xrad += step)
 				{
 					for (yrad=0; yrad <= M_PI*2; yrad += step)
