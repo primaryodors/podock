@@ -1625,6 +1625,23 @@ Point Molecule::get_barycenter() const
     int i;
 
     for (i=0; i<atcount; i++)
+    	locs[i] = atoms[i]->get_location();
+
+    return average_of_points(locs, atcount);
+}
+
+Point Molecule::get_rotation_center() const
+{
+    if (noAtoms(atoms))
+    {
+        Point pt;
+        return pt;
+    }
+
+    Point locs[atcount];
+    int i;
+
+    for (i=0; i<atcount; i++)
     {
     	locs[i] = atoms[i]->get_location();
     	
@@ -1659,7 +1676,7 @@ void Molecule::rotate(SCoord* SCoord, float theta)
     if (noAtoms(atoms)) return;
     // cout << name << " Molecule::rotate()" << endl;
 
-    Point cen = get_barycenter();
+    Point cen = get_rotation_center(); // get_barycenter();
 
     int i;
     for (i=0; i<atcount; i++)
@@ -2331,7 +2348,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
             float reversal = -0.666; // TODO: Make this binding-energy dependent.
             float accel = 1.1;
             
-            continue; // Something in this fuction is funking up and requires to be identified and fixed.
+            // continue; // Something is messing up the ligand location during dock and requires to be identified and fixed.
 
             /**** Linear Motion ****/
             if (mm[i]->movability >= MOV_ALL) // && iter >= 10)

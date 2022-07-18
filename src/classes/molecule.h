@@ -56,6 +56,7 @@ class Molecule
 
     // Spatial functions.
     Point get_barycenter() const;
+    Point get_rotation_center() const;
     virtual void move(SCoord move_amt);
     virtual void move(Point move_amt);
     virtual void recenter(Point new_location);

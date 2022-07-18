@@ -63,6 +63,7 @@ void iteration_callback(int iter)
 
     Point bary = ligand->get_barycenter();
 
+    #if 1
     if (bary.get_3d_distance(ligcen_target) > size.magnitude())
     {
         //cout << "Wrangle! " << bary << ": " << bary.get_3d_distance(ligcen_target) << " vs. " << size.magnitude() << endl;
@@ -78,8 +79,10 @@ void iteration_callback(int iter)
         bary.z += (ligcen_target.z - bary.z) * drift;
     }
 
-    // ligand->recenter(bary);
-    cout << "At no point should this number be significantly worse than the previous: " << bary << " " << ligand->get_sum_atom_binding_energies() << endl;
+    ligand->recenter(bary);
+    #endif
+
+    cout << iter << " At no point should this number be significantly less than the previous: " << bary << " " << ligand->get_sum_atom_binding_energies() << endl;
 
 	if (ligand->get_sum_atom_binding_energies() > 0)
     	drift *= (1.0 - 0.5/iters);
@@ -852,11 +855,6 @@ int main(int argc, char** argv)
             if (debug) *debug << "Saved last nodecen." << endl;
 #endif
 
-            // Move the ligand to the new node center.
-            m.recenter(nodecen);
-#if _DBG_STEPBYSTEP
-            if (debug) *debug << "Molecule recenter (or not)." << endl;
-#endif
             m.reset_conformer_momenta();
 #if _DBG_STEPBYSTEP
             if (debug) *debug << "Conformer momenta reset." << endl;
