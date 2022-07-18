@@ -1625,7 +1625,10 @@ Point Molecule::get_barycenter() const
     int i;
 
     for (i=0; i<atcount; i++)
-    	locs[i] = atoms[i]->get_location();
+    {
+        locs[i] = atoms[i]->get_location();
+        locs[i].weight = atoms[i]->get_atomic_weight();
+    }
 
     return average_of_points(locs, atcount);
 }
