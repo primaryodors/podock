@@ -63,7 +63,7 @@ void iteration_callback(int iter)
 
     Point bary = ligand->get_barycenter();
 
-    #if 1
+    #if allow_drift
     if (bary.get_3d_distance(ligcen_target) > size.magnitude())
     {
         //cout << "Wrangle! " << bary << ": " << bary.get_3d_distance(ligcen_target) << " vs. " << size.magnitude() << endl;
@@ -86,14 +86,16 @@ void iteration_callback(int iter)
 
 	if (ligand->get_sum_atom_binding_energies() > 0)
     	drift *= (1.0 - 0.5/iters);
-    /*else
+    else
     {
+        #if allow_lonely_target
     	Point delta = where_stuff_isnt.subtract(ligcen_target);
     	ligcen_target.x += 0.2 * delta.x;
     	ligcen_target.y += 0.2 * delta.y;
     	ligcen_target.z += 0.2 * delta.z;
     	drift = fmin(0.4, drift*1.1);
-	}*/
+        #endif
+	}
 
     if (gcfmols && seql)
     {

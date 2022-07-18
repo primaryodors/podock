@@ -1645,8 +1645,10 @@ Point Molecule::get_rotation_center() const
     {
     	locs[i] = atoms[i]->get_location();
     	
+        #if allow_tethered_rotation
     	// Reduce motion of atoms engaged in intermolecular bonds by moving the center of rotation towards them.
     	if (atoms[i]->last_bind_energy > 0) locs[i].weight += atoms[i]->last_bind_energy * 100;
+        #endif
 	}
 
     return average_of_points(locs, atcount);
@@ -2351,6 +2353,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
             // continue; // Something is messing up the ligand location during dock and requires to be identified and fixed.
 
             /**** Linear Motion ****/
+            #if allow_linear_motion
             if (mm[i]->movability >= MOV_ALL) // && iter >= 10)
             {
                 if (!(iter % _fullrot_every))
@@ -2518,9 +2521,11 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
 		            mm[i]->lastbind = bind;
                 }
             }
+            #endif
             /**** End Linear Motion ****/
 
             /**** Axial Tumble ****/
+            #if allow_axial_tumble
             if (mm[i]->movability >= MOV_NORECEN)
             {
                 bind = 0;
@@ -2705,12 +2710,14 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
 
                 mm[i]->lastbind = bind;
             }
+            #endif
             /**** End Axial Tumble ****/
 
             if ((iter % _fullrot_every)) continue;
 
 
             /**** Bond Flexion ****/
+            #if allow_bond_flexion
             // cout << mm[i]->name << ": " << mm[i]->movability << endl;
             if (mm[i]->movability >= MOV_FLEXONLY)
             {
@@ -2848,7 +2855,9 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
 
                 if (!(iter % _fullrot_every)) mm[i]->reset_conformer_momenta();
             }
+            #endif
             /**** End Bond Flexion ****/
+
         }	// for i
         // cout << "Iteration " << iter << " improvement " << improvement << endl;
 

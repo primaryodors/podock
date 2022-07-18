@@ -92,6 +92,13 @@
 #define POLYPRO1_PSI fiftyseventh*160
 #define POLYPRO1_OMEGA fiftyseventh*113
 
+// Debug switches because the docker is currently a steaming pile of pseudoscience.
+#define allow_drift 0
+#define allow_lonely_target 0
+#define allow_linear_motion 0
+#define allow_axial_tumble 0
+#define allow_bond_flexion 0
+#define allow_tethered_rotation 0
 
 #endif
 
