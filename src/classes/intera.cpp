@@ -364,6 +364,7 @@ InteratomicForce** InteratomicForce::get_applicable(Atom* a, Atom* b)
     	}
     }
     
+    #if allow_hydroxy_rotations
     if (H && O && brot)
     {
     	float rad, step = 30*fiftyseventh, bestr=999999, bestrad=0;
@@ -382,6 +383,7 @@ InteratomicForce** InteratomicForce::get_applicable(Atom* a, Atom* b)
     	
     	if (bestrad) brot->rotate(bestrad);
     }
+    #endif
 
     for (i=0; look[i]; i++)
     {
@@ -508,6 +510,10 @@ float InteratomicForce::total_binding(Atom* a, Atom* b)
 
     int i, j, k;
     float kJmol = 0;
+    
+    #if all_forces_return_zero
+    return 0;
+    #endif
 
     float r = a->distance_to(b);
     float avdW = a->get_vdW_radius(), bvdW = b->get_vdW_radius();
@@ -522,6 +528,10 @@ float InteratomicForce::total_binding(Atom* a, Atom* b)
     {
     	goto _canstill_clash;
 	}
+	
+	#if skip_atomic_bindings
+	goto _canstill_clash;
+	#endif
 
     if (r < 0.5) forces[0] = NULL;
 

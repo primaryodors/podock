@@ -44,6 +44,8 @@ class Molecule
     void identify_acidbase();				// called within every load.
     bool from_smiles(char const * smilesstr);
     float close_loop(Atom** path, float closing_bond_cardinality);
+    void save_state();
+    void restore_state();
 
     // Getters.
     const char* get_name() const	{	return name;	}
@@ -145,6 +147,8 @@ class Molecule
     bool doing_bkbend = false;
     float base_internal_clashes = 0;					// Baseline computed internal clashes due to unavoidably close atoms.
     std::string sdfgen_aboutline = "";
+    
+    std::vector<Point> saved_atom_locs;
 
     // For intermol conformer optimization:
     float lmx=0,lmy=0,lmz=0;			// Linear momentum xyz.

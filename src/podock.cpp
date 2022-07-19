@@ -51,6 +51,7 @@ bool kcal = false;
 float drift = 0.333;
 Point where_stuff_isnt;
 Molecule** gcfmols = NULL;
+float plgsbe = -Avogadro;
 
 bool use_bestbind_algorithm = false;		// Uses older "best binding" algorithm instead of newer "tumble spheres".
 											// Generally, tumble spheres give better results but let's leave best bind code
@@ -82,7 +83,23 @@ void iteration_callback(int iter)
     ligand->recenter(bary);
     #endif
 
-    cout << iter << " At no point should this number be significantly less than the previous: " << bary << " " << ligand->get_sum_atom_binding_energies() << endl;
+	float lgsbe = ligand->get_sum_atom_binding_energies();
+    cout << iter << " At no point should this number be significantly less than the previous: " << bary << " " << lgsbe;
+    
+    if (lgsbe < plgsbe)
+    {
+    	ligand->restore_state();
+    	protein->restore_state();
+    	cout << " (reverted to " << plgsbe << ").";
+    }	
+    else
+    {
+    	plgsbe = lgsbe;
+    	ligand->save_state();
+    	protein->save_state();
+    }
+    
+    cout << endl;
 
 	if (ligand->get_sum_atom_binding_energies() > 0)
     	drift *= (1.0 - 0.5/iters);
@@ -600,6 +617,8 @@ int main(int argc, char** argv)
     DockResult dr[poses+2][pathnodes+2];
     for (i=0; i<poses; i++) dr[i][0].kJmol = 0;
     int drcount = 0;
+    
+    throw_on_move = true;
 
     srand(0xb00d1cca);
     // srand(time(NULL));
@@ -888,7 +907,7 @@ int main(int argc, char** argv)
             cout << endl << endl;
             if (output) *output << endl << endl;*/
 
-
+			#if allow_nodezero_code
             if (!nodeno)
             {
                 Molecule* alignment_aa[5];
@@ -904,9 +923,9 @@ int main(int argc, char** argv)
             		dr[drcount][l].metric = 0;
             	}
             	
-#if _DBG_STEPBYSTEP
+				#if _DBG_STEPBYSTEP
                 if (debug) *debug << "Initialize null AA pointer." << endl;
-#endif
+				#endif
 
                 // Find a binding pocket feature with a strong potential binding to the ligand.
                 std::string alignment_name = "";
@@ -1099,11 +1118,13 @@ int main(int argc, char** argv)
 		                }
 	                }
                 }
-#if _DBG_STEPBYSTEP
+				
+				#if _DBG_STEPBYSTEP
                 if (debug) *debug << "Aligned ligand to AA." << endl;
-#endif
+				#endif
     			cout << endl;
             }
+            #endif
 
             // float driftamt = 1.0 / (iters/25+1);
             // cout << pose << ":" << nodeno << " drift " << driftamt << endl;
@@ -1135,6 +1156,10 @@ int main(int argc, char** argv)
             );
             /*time_t jlgsux = time(NULL);
             cout << "\nIterations took: " << (jlgsux-preiter) << " seconds." << endl;*/
+            
+            #if nothing_after_multimol_call
+            continue;
+            #endif
 
             // Add the current pose/path sequentially to the dr[][] array.
             // If the path node # is zero:

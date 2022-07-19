@@ -2,16 +2,19 @@
 PrimaryOdors.org molecular docker.<br>
 http://www.primaryodors.org
 
+Please excuse our dust as we improve this software and get it working again.
+
 PODock is a fast, lightweight molecular docking software package that offers the following advantages:
 - Path-based docking;
 - Native support for side-chain flexion;
 - Per-residue binding strength output;
 - Per-binding-type binding strength output;
+- Small self contained codebase with no extraordinary dependencies;
+- Does not require CMake, but can be built on any recent *nix system using make, g++, and the C++14 Standard Library;
 - Interatomic parameters stored in flat text files that can be edited without recompiling the application.
 
-To Use PODock, first clone the repository, then execute the following commands:
+To Use PODock, please first clone the repository, then execute the following command:
 
-For Linux:
 ```
 make podock
 ```
@@ -21,10 +24,8 @@ If you are a developer contributing to the project, you can use `make` to build 
 
 The application will require 3D maps of your target receptor(s) in PDB format. Please note that PODock does not currently
 hydrogenate PDB models that do not include hydrogen atoms, so if your model contains heavy atoms only, the accuracy of
-docking results may be severely compromised.
-
-PDBs for human olfactory receptors are provided in the pdbs folder for olfactory docking. They have been modified from the PDBs
-avaialble at the GPCR-I-TASSER website: https://zhanggroup.org/GPCR-I-TASSER/
+docking results may be severely compromised. PDBs for human olfactory receptors are provided in the pdbs folder for olfactory
+docking. They have been modified from the PDBs avaialble at the GPCR-I-TASSER website: https://zhanggroup.org/GPCR-I-TASSER/
 
 It will also be necessary to obtain 3D models of your ligand(s). Currently, only SDF format is supported.
 SDFs can be obtained a few different ways:

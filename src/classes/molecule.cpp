@@ -573,6 +573,25 @@ int Molecule::from_pdb(FILE* is)
     return added;
 }
 
+void Molecule::save_state()
+{
+	saved_atom_locs.clear();
+	
+	if (!atoms) return;
+	int i;
+	for (i=0; atoms[i]; i++)
+		saved_atom_locs.push_back(atoms[i]->get_location());
+}
+
+void Molecule::restore_state()
+{
+	if (!atoms) return;
+	int i, n = saved_atom_locs.size();
+	
+	for (i=0; i<n && atoms[i]; i++)
+		atoms[i]->move(saved_atom_locs[i]);
+}
+
 int Molecule::get_bond_count(bool unidirectional) const
 {
     int i, j, bc=0;
@@ -1613,9 +1632,6 @@ void Molecule::move(Point move_amt)
     }
 }
 
-// Don't make these ftns const. I just had to power cycle my computer 2x because the value in atcount
-// had more digits than my phone number and it kept crashing the IDE from the local variables panel.
-// Not even exaggerating.
 Point Molecule::get_barycenter()
 {
     if (noAtoms(atoms))
@@ -1868,6 +1884,10 @@ float Molecule::get_intermol_binding(Molecule** ligands)
     float kJmol = 0;
     kJmol -= get_internal_clashes()*_kJmol_cuA;
     
+    #if all_binding_returns_zero
+    return 0;
+    #endif
+    
     // cout << (name ? name : "") << " base internal clashes: " << base_internal_clashes << "; final internal clashes " << -kJmol << endl;
 
     for (i=0; i<atcount; i++)
@@ -1881,7 +1901,8 @@ float Molecule::get_intermol_binding(Molecule** ligands)
             if (ligands[l] == this) continue;
             for (j=0; j<ligands[l]->atcount; j++)
             {
-                float r = ligands[l]->atoms[j]->get_location().get_3d_distance(&aloc);
+                float r = ligands[l]->atoms[j]->get_location().get_3d_distance(aloc);
+                #if binding_outer
                 if (r < _INTERA_R_CUTOFF)
                 {
                     if (	!shielded(atoms[i], ligands[l]->atoms[j])
@@ -1890,14 +1911,18 @@ float Molecule::get_intermol_binding(Molecule** ligands)
                        )
                     {
                         float abind = InteratomicForce::total_binding(atoms[i], ligands[l]->atoms[j]);
+                        
+                        #if binding_inner
                         if (abind && !isnan(abind) && !isinf(abind))
                         {
                             kJmol += abind;
                             atoms[i]->last_bind_energy += abind;
                             // cout << atoms[i]->name << " to " << ligands[l]->atoms[j]->name << ": " << r << " A; " << abind << " kJ/mol." << endl;
                         }
+                        #endif
                     }
                 }
+                #endif
             }
         }
     }
@@ -2332,7 +2357,10 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
         {
             bool nearby[inplen+4];
             Point icen = mm[i]->get_barycenter();
+            
+            bind = 0;
 
+            #if allow_nearby_filter
             for (j=0; mm[j]; j++)
             {
                 /* if (j == i)
@@ -2361,6 +2389,7 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                     bind += mm[i]->get_intermol_binding(mm[j]); // + local_ESP * mm[i]->get_intermol_potential(mm[j]);
                 }
             }
+            #endif
             mm[i]->lastbind = bind;
 
             float reversal = -0.666; // TODO: Make this binding-energy dependent.
@@ -2812,9 +2841,17 @@ void Molecule::multimol_conform(Molecule** mm, int iters, void (*cb)(int))
                                 for (j=0; mm[j]; j++)
                                 {
                                     if (!nearby[j]) continue;
-                                    float lbind1 = (mm[i]->mol_typ == MOLTYP_AMINOACID)
-                                    			 ?  mm[i]->get_intermol_binding(mm[j])
-                                    			 :  mm[i]->get_intermol_potential(mm[j]) - 200 * mm[i]->get_internal_clashes()
+                                    float lbind1 = 
+                                    
+                                    #if allow_ligand_esp
+                                    			 (mm[i]->mol_typ == MOLTYP_AMINOACID)
+                                    			 ?
+                                    #endif
+                                    			 mm[i]->get_intermol_binding(mm[j])
+                                    #if allow_ligand_esp
+                                    			 :  
+                                    			 mm[i]->get_intermol_potential(mm[j]) - 200 * mm[i]->get_internal_clashes()
+                                    #endif
                                     			 ;
                                     bind1 += lbind1;
                                     #if DBG_BONDFLEX

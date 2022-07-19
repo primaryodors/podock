@@ -92,13 +92,26 @@
 #define POLYPRO1_PSI fiftyseventh*160
 #define POLYPRO1_OMEGA fiftyseventh*113
 
-// Debug switches because the docker is currently a steaming pile of pseudoscience.
-#define allow_drift 0
-#define allow_lonely_target 0
-#define allow_linear_motion 0
-#define allow_axial_tumble 0
-#define allow_bond_flexion 0
-#define allow_tethered_rotation 0
+// Debug switches because the docker is currently being un tas de marde fumante.
+// Set these to true or nonzero for proper fuctionality:
+#define allow_drift 1
+#define allow_lonely_target 1
+#define allow_linear_motion 1
+#define allow_axial_tumble 1
+#define allow_bond_flexion 1
+#define allow_tethered_rotation 1
+#define allow_nodezero_code 1
+#define allow_nearby_filter 1
+#define binding_outer 1
+#define binding_inner 1
+#define allow_hydroxy_rotations 1
+#define allow_ligand_esp 1
+
+// Set these to false or zero for proper fuctionality:
+#define nothing_after_multimol_call 0
+#define all_binding_returns_zero 0
+#define skip_atomic_bindings 0
+#define all_forces_return_zero 0
 
 #endif
 

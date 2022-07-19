@@ -176,6 +176,24 @@ bool Protein::add_sequence(const char* lsequence)
     return true;
 }
 
+void Protein::save_state()
+{
+	if (!residues) return;
+	int i;
+	
+	for (i=0; residues[i]; i++)
+		residues[i]->save_state();
+}
+
+void Protein::restore_state()
+{
+	if (!residues) return;
+	int i;
+	
+	for (i=0; residues[i]; i++)
+		residues[i]->restore_state();
+}
+
 void Protein::save_pdb(FILE* os)
 {
     int i, offset=0;

@@ -215,7 +215,6 @@ class Atom
 
 	protected:
     int Z=0;
-    Point location;
     int valence=0;
     int geometry=0;						// number of vertices, so 4 = tetrahedral; 6 = octahedral; etc.
     int origgeo=0;
@@ -237,6 +236,7 @@ class Atom
     bool swapped_chirality = false;
     bool chirality_unspecified = true;
 	Ring** member_of = nullptr;
+    Point location = Point(0,0,0);
 
     static void read_elements();
     void figure_out_valence();
@@ -258,7 +258,7 @@ static bool read_elem_syms = false;
 std::ostream& operator<<(std::ostream& os, const Bond& b);
 std::ostream& operator<<(std::ostream& os, const Ring& r);
 
-
+static bool throw_on_move = false;
 
 
 #endif

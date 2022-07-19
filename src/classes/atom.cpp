@@ -474,6 +474,8 @@ bool Atom::move(Point* pt)
 		}
 	}*/
 	
+	if (throw_on_move && !residue) throw 0xdeb06;
+	
     location = *pt;
     location.weight = at_wt;
     geov = NULL;
@@ -491,6 +493,9 @@ bool Atom::move_rel(SCoord* v)
 			if (r > 1.55) throw 0x7e57196;
 		}
 	}*/
+	
+	if (throw_on_move && !residue) throw 0xdeb06;
+	
     location = location.add(v);
     geov = NULL;
     return true;
@@ -503,6 +508,8 @@ int Atom::move_assembly(Point* pt, Atom* excluding)
     Bond* palin = excluding->get_bond_between(this);
     Atom** atoms = palin->get_moves_with_btom();
     if (!atoms) return 0;
+	
+	if (throw_on_move && !residue) throw 0xdeb06;
 
     //cout << "Moving assembly starting with " << name << " excluding " << excluding->name << endl;
 
